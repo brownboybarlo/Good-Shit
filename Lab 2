@@ -1,0 +1,420 @@
+#include <iostream> //cout, cin, endl
+#include <iomanip> //setw
+#include <unistd.h> //sleep
+#include <algorithm> //transform
+#include <fstream> //ifstream, ofstream
+#include <chrono> //duration
+#include <string> //string
+
+void table(std::chrono::duration<double> bubble, std::chrono::duration<double> insert, std::chrono::duration<double> quick, std::chrono::duration<double> merge); //print time it takes to sort values
+
+struct to_lower
+ //encompassed within transform(), converts upper case words to lower case
+{
+	int operator() (int ch)
+	{
+		return std::tolower (ch);
+	}
+};
+
+bool is_number(const std::string& s); //checks to see if element is a number
+int delete_element(std::string array[], int n, std::string x); //removes element from array 
+std::string punctuation(std::string array[], std::string word); //removes punctuation in array
+std::string copy(std::string array[], std::string array1[], int size); //Makes copy of original array
+
+void swap(std::string *x, std::string *y); //Function used for bubble sort and partition
+void bubble(std::string array[], int n); //Bubble sort
+int partition(std::string array[], int from, int to); //Function used for quick sort
+void insert(std::string array[], int size); //Insert sort
+void quick(std::string array[], int from, int to); // Quick sort
+void merge(std::string array[], int from, int mid, int to); //Function input into merge sort
+void merges(std::string a[], int from, int to); //Merge sort
+
+int main()
+{
+	std::ifstream filein;
+	std::ofstream fileout;
+	int SIZE;
+	std::string book; //Initializing all input variables
+	int sample;
+	std::string display;
+	std::string repeat;
+	
+	using namespace std::chrono; //Records times of sorting in decimals
+	duration<double> time_b;
+	duration<double> time_i;
+	duration<double> time_q;
+	duration<double> time_m;
+	high_resolution_clock::time_point before;
+	high_resolution_clock::time_point after;
+	
+	std::cout<< "Program start..." <<std::endl;
+	sleep(1); //Pauses program for one second
+	
+	std::cout << "Hello! In this program we will be comparing algorithm sort types. ";
+	std:: cout << "To start, \nselect a book of your choice: Hunger Games, Catching Fire, or MockingJay." << std::endl;
+	back_1: //User is taken back here if incorrect value put in
+	std::getline(std::cin, book);
+
+	if(book == "hunger games" || book == "Hunger Games" || book == "Hunger games" || book == "hunger Games")
+	{
+		filein.open("hungergames.txt");
+	}
+	else if(book == "Catching Fire" || book == "catching fire" || book == "Catching fire" || book == "catching Fire")
+	{
+		filein.open("catchingfire.txt");
+	}
+	else if(book == "Mockingjay"|| book == "mockingjay")
+	{
+		filein.open("mockingjay.txt");
+	}
+	else
+	{
+		std::cout << "Choose Hunger Games, Catching Fire, or Mockingjay, please." << std::endl;
+		goto back_1; //If incorrect value is input, take user back
+	}
+	
+	if(filein.fail())
+	{
+		std::cout << "Error opening the file." << std::endl;
+		return -1;
+	}
+	
+	std::cout<< "Opening text file..." <<std::endl;
+	sleep(1);
+	
+	std::cout << "Would you like to calculate the time to sort 5,000 words or 10,000 words?" << std::endl;
+	back_2:
+	std::cin >> sample;
+	
+	if(sample == 5000)
+	{
+		SIZE = 5000;
+	}
+	else if(sample == 10000)
+	{
+		SIZE = 10000;
+	}
+	else
+	{
+		std::cout << "You didn't choose the given numbers. Try again." << std::endl;
+		goto back_2;
+	}
+	
+	std::string array[SIZE]; //Original array
+	std::string array1[SIZE] = array; //Copies of original array
+	std::string array2[SIZE] = array;
+	std::string array3[SIZE] = array;
+	std::string array4[SIZE] = array;
+	
+	for(int i=0; i < SIZE; i++)
+	{
+		filein >> array[i]; //Values stored into array
+		std::transform(array[i].begin(), array[i].end(), array[i].begin(), to_lower());	 //Transform function used to convert string to lowercase
+		array[i] = punctuation(array, array[i]);
+		if(is_number(array[i]))
+		{
+			SIZE = delete_element(array, SIZE, array[i]); //is_number and delete_element functions combined to delete numbers
+		}
+	}
+	
+	std::cout<<"Reading word list from file..."<<std::endl;
+	sleep(1);
+	std::cout<<"Parsing data..."<<std::endl;
+	sleep(1);
+	std::cout<<"Removing punctuation..."<<std::endl;
+	sleep(1);
+	std::cout<<"Sorting..."<<std::endl;
+	sleep(1);
+	std::cout<<"Calculating times..."<<std::endl;
+	sleep(1);
+	std::cout<<"Making table..."<<std::endl;
+	sleep(1);
+	
+	std::cout << std::left << std::setw(15) << "Bubble" << std::setw(15) << "Insert" << std::setw(15) << "Quick" << std::setw(15) << "Merge" << std::endl; //Table header
+	
+	for(int i = 0; i<5; i++) //Times of functions calculated, checks 5 times
+	{
+		copy(array, array1, SIZE);
+		copy(array, array2, SIZE);
+		copy(array, array3, SIZE);
+		copy(array, array4, SIZE);
+			
+		before = high_resolution_clock::now();
+		bubble(array1,SIZE);
+		after = high_resolution_clock::now();
+		time_b = duration_cast<duration<double> >(after-before);
+		
+		before = high_resolution_clock::now();
+		insert(array2,SIZE);
+		after = high_resolution_clock::now();
+		time_i = duration_cast<duration<double> >(after-before);
+			
+		before = high_resolution_clock::now();
+		quick(array3,0,SIZE-1);
+		after = high_resolution_clock::now();
+		time_q = duration_cast<duration<double> >(after-before);
+			
+		before = high_resolution_clock::now();
+		merges(array4,0,SIZE-1);
+		after = high_resolution_clock::now();
+		time_m = duration_cast<duration<double> >(after-before);
+		
+		table(time_b, time_i, time_q, time_m);
+		sleep(0.5);	
+	}
+
+	std::cout << "Displaying times for sorted lists...." << std::endl;
+	sleep(1);
+
+	for(int i = 0; i<5; i++) //Times of functions calculated, checks 5 times
+	{
+		before = high_resolution_clock::now();
+		bubble(array4,SIZE);
+		after = high_resolution_clock::now();
+		time_b = duration_cast<duration<double> >(after-before);
+		
+		before = high_resolution_clock::now();
+		insert(array4,SIZE);
+		after = high_resolution_clock::now();
+		time_i = duration_cast<duration<double> >(after-before);
+			
+		before = high_resolution_clock::now();
+		quick(array4,0,SIZE-1);
+		after = high_resolution_clock::now();
+		time_q = duration_cast<duration<double> >(after-before);
+			
+		before = high_resolution_clock::now();
+		merges(array4,0,SIZE-1);
+		after = high_resolution_clock::now();
+		time_m = duration_cast<duration<double> >(after-before);
+		
+		table(time_b, time_i, time_q, time_m);
+		sleep(0.5);
+	}
+
+	std::cout << "Would you like to display the first 100 words or last 100 words? (type 'first' \nor 'last')" << std::endl;
+	back_3:
+	std::cin >> display;
+	
+	if(display == "first" || display == "First")
+	{
+		std::cout<<"Preparing to display..."<<std::endl;
+		sleep(1);
+		for(int i=0; i<100; i++)
+		{
+			std::cout << array4[i] <<std::endl;	
+		}
+	}
+	else if(display == "last" || display == "Last")
+	{
+		std::cout<<"Preparing to display..."<<std::endl;
+		sleep(1);
+		for(int i=SIZE-100; i<SIZE;i++)
+		{
+			std::cout << array4[i] <<std::endl;	
+		}
+	}
+	else
+	{
+		std::cout << "You didn't type in first or last. Try again." << std::endl;
+		goto back_3;
+	}
+	
+	filein.close(); //Closes file in case user wants to repeat program
+	
+	std::cout << "Thanks for using this program! Would you like to start over? (Yes/No)" << std::endl;
+	std::cin >> repeat;
+	
+	if(repeat == "Yes" || repeat == "yes")
+	{
+		std::cout <<"Glad you stayed! Preparing to restart..." << std::endl;
+		sleep(1);
+		goto back_1; //Brings user back to top
+	}
+	else
+	{
+		std::cout<<"Have a good one!"<<std::endl;
+		return 0;
+	}
+}
+
+void table(std::chrono::duration<double> bubble, std::chrono::duration<double> insert, std::chrono::duration<double> quick, std::chrono::duration<double> merge) //print time it takes to sort values
+{
+	std::cout << std::left << std::setw(15) << bubble.count() << std::setw(15) << insert.count() << std::setw(15) << quick.count() << std::setw(15) << merge.count() << std::endl;
+}
+
+int delete_element(std::string array[], int n, std::string x) 
+{
+	if(array[n-1] == x)
+	{
+		return(n-1);
+	}
+	
+	std::string prev=array[n-1];
+	int i;
+	for(i=n-2; i>=0 && array[i] !=x; i--)
+	{
+		std::string curr = array[i];
+		array[i] = prev;
+		prev = curr;
+	}
+	
+	if(i <0)
+	{
+		return 0;
+	}
+	
+	array[i] = prev;
+	
+	return(n-1);
+}
+
+bool is_number(const std::string& s) 
+{
+	std::string::const_iterator it = s.begin();
+	while(it  != s.end() && std::isdigit(*it)) {it++;}
+	return !s.empty() && it ==s.end();
+}
+std::string punctuation(std::string array[], std::string word) 
+{
+		for(int j=0, len=word.size(); j<len; j++)
+		{
+			if(ispunct(word[j]))
+			{
+				word.erase(j--, 1);
+				len = word.size();
+			}
+		}
+		return word;
+}
+
+void swap(std::string *x, std::string *y) 
+{
+	std::string temp = *x;
+	*x=*y;
+	*y=temp;
+}
+
+
+void bubble(std::string array[], int n) 
+{
+	for(int i = 0; i<n-1; i++)
+	{
+		for(int j=0;j<n-i-1;j++)
+		{
+			if(array[j] > array[j+1])
+			{
+				swap(array[j],array[j+1]);
+			}
+		}
+	}
+}
+
+
+int partition(std::string array[], int from, int to) 
+{
+	std::string pivot = array[from];
+	int i = from - 1;
+	int j = to + 1;
+	while(i<j)
+	{
+		i++; while(array[i] < pivot) {i++;}
+		j--; while(array[j] > pivot) {j--;}
+		if(i < j) {swap(array[i],array[j]);}
+	}
+	return j;
+}
+
+void insert(std::string array[], int size) 
+{
+	int j;
+	std::string word;
+	for(int i=1; i<size;i++)
+	{
+		word = array[i];
+		j = i-1;
+		while(j>=0 && array[j]>word)
+		{
+			array[j+1] = array[j];
+			j--;
+		}
+		array[j+1]=word;
+	}
+}
+
+void quick(std::string array[], int from, int to) 
+{
+	if(from >= to) {return;}
+	int p = partition(array, from, to);
+	quick(array, from, p);
+	quick(array, p+1, to);
+}
+
+void merge(std::string array[], int from, int mid, int to) 
+{
+		int a1 = mid - from + 1;
+		int a2 = to - mid;
+		std::string left[a1], right[a2];
+		int i, j, k;
+		
+		for(int i = 0; i < a1; i++)
+		{
+			left[i] = array[from + i];
+		}
+		for(int j = 0; j < a2; j++)
+		{
+			right[j] = array[mid + 1 + j];
+		}
+		
+		i = 0;
+		j = 0;
+		k = from;
+		
+		while(i < a1 && j < a2)
+		{
+			if(left[i] <= right[j])
+			{
+				array[k] = left[i];
+				i++;
+			}
+			else
+			{
+				array[k] = right[j];
+				j++;
+			}
+			k++;
+		}
+		
+		while(i < a1)
+		{
+			array[k] = left[i];
+			i++;
+			k++;
+		}
+		
+		while(j < a2)
+		{
+			array[k] = right[j];
+			j++;
+			k++;
+		}
+}
+
+void merges(std::string a[], int from, int to) 
+{	
+	if(from == to) {return;}
+	int mid = (from + to) / 2;
+	
+	merges(a, from, mid);
+	merges(a, mid + 1, to);
+	merge(a, from, mid, to);
+}
+
+std::string copy(std::string array[], std::string array1[], int size) 
+{
+	for(int i=0; i<size;i++)
+	{
+		array1[i] = array[i];
+	}
+}		
